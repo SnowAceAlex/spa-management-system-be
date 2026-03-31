@@ -11,10 +11,14 @@ Backend cho đề tài **CRM spa/salon** (hiện tại: setup codebase + User/au
 
 ## Cấu trúc chính
 
-- `src/server.js`: start server
-- `src/app.js`: express app + middleware + routes
-- `src/modules/auth/auth.routes.js`: `/auth/register|login|refresh|logout`
-- `src/modules/users/users.routes.js`: `/users/me`
+- `server.js`: entry point
+- `swagger.js`: Swagger docs config
+- `src/app.js`: express app + middleware + mount routes
+- `src/routes/auth.routes.js`: `/auth/register|login|refresh|logout`
+- `src/routes/users.routes.js`: `/users/me`
+- `src/controllers/*`: handler logic (business)
+- `src/validations/*`: Zod schemas + validate middleware
+- `src/config/db.js`: Prisma client
 - `prisma/schema.prisma`: `User`, `RefreshToken`
 
 ## Setup & chạy local
@@ -31,7 +35,8 @@ Copy từ `.env.example` sang `.env` và điền giá trị thật.
 
 Các biến quan trọng:
 
-- `DATABASE_URL`: connection string Neon (Postgres)
+- `DATABASE_URL`: connection string Neon (Postgres). Có thể dùng **pooler** cho runtime.
+- `DIRECT_URL`: connection string **direct (non-pooler)** để chạy Prisma migrate (tránh lỗi advisory lock timeout).
 - `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`: chuỗi bí mật đủ dài (>= 20 ký tự)
 
 ### 3) Migrate DB + seed admin
@@ -64,6 +69,9 @@ Mở:
 3. Trong Swagger, bấm **Authorize** → dán `Bearer <accessToken>`
 4. **GET** `/users/me`
 5. **POST** `/auth/refresh` để rotate token
+
+Lưu ý:
+- `/auth/refresh` và `/auth/logout` cần gửi **`refreshToken`** trong body để server có thể rotate/revoke đúng “session”.
 
 ## Scripts
 
