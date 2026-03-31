@@ -1,7 +1,5 @@
 # Spa Management System (BE)
 
-Backend cho đề tài **CRM spa/salon** (hiện tại: setup codebase + User/auth).
-
 ## Tech stack
 
 - Node.js + Express.js (ESM)
@@ -71,6 +69,7 @@ Mở:
 5. **POST** `/auth/refresh` để rotate token
 
 Lưu ý:
+
 - `/auth/refresh` và `/auth/logout` cần gửi **`refreshToken`** trong body để server có thể rotate/revoke đúng “session”.
 
 ## Scripts
