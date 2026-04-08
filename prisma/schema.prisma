@@ -51,6 +51,17 @@ enum NotificationType {
   PROMOTION
 }
 
+enum DiscountType {
+  PERCENTAGE
+}
+
+enum LoyaltyTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
 model User {
   id           String         @id @default(cuid())
   email        String         @unique
@@ -238,7 +249,7 @@ model LoyaltyAccount {
 
   totalPoints    Int      @default(0)
   lifetimePoints Int      @default(0)
-  tier           String   @default("BRONZE")
+  tier           LoyaltyTier @default(BRONZE)
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -267,7 +278,7 @@ model LoyaltyReward {
   name          String
   description   String?
   pointsCost    Int
-  discountType  String
+  discountType  DiscountType @default(PERCENTAGE)
   discountValue Decimal  @db.Decimal(10, 2)
   isActive      Boolean  @default(true)
   validDays     Int      @default(30)
@@ -315,7 +326,7 @@ model Promotion {
   name          String
   description   String?
   code          String?   @unique
-  discountType  String
+  discountType  DiscountType @default(PERCENTAGE)
   discountValue Decimal   @db.Decimal(10, 2)
   minSpend      Decimal?  @db.Decimal(10, 2)
   maxUses       Int?
