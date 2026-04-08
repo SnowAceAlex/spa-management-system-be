@@ -161,14 +161,14 @@ model StaffSpecialization {
 }
 
 model StaffSchedule {
-  id           String  @id @default(cuid())
+  id           String   @id @default(cuid())
   staffId      String
-  staff        Staff   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  staff        Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
 
   dayOfWeek    Int
-  startTime    String
-  endTime      String
-  isWorkingDay Boolean @default(true)
+  startTime    DateTime @db.Time(0)
+  endTime      DateTime @db.Time(0)
+  isWorkingDay Boolean  @default(true)
 
   @@unique([staffId, dayOfWeek])
 }
