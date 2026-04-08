@@ -311,6 +311,8 @@ model Review {
   customer      Customer    @relation(fields: [customerId], references: [id])
   staffId       String
   staff         Staff       @relation(fields: [staffId], references: [id])
+  serviceId     String
+  service       Service     @relation(fields: [serviceId], references: [id])
 
   rating        Int
   comment       String?
