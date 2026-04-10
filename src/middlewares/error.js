@@ -13,5 +13,6 @@ export function errorHandler(err, _req, res, _next) {
   res.status(status).json({
     message,
     ...(process.env.NODE_ENV !== 'production' && err.code ? { code: err.code } : {}),
+    ...(err.details ? { details: err.details } : {}),
   });
 }

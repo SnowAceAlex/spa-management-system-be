@@ -28,6 +28,24 @@ export function auth(req, _res, next) {
   }
 }
 
+export function optionalAuth(req, _res, next) {
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) {
+    return next();
+  }
+  try {
+    const token = header.slice('Bearer '.length);
+    const decoded = verifyAccessToken(token);
+    const parsed = JwtPayloadSchema.safeParse(decoded);
+    if (parsed.success) {
+      req.user = { id: parsed.data.sub, role: parsed.data.role };
+    }
+  } catch {
+    // Invalid or expired token: treat as anonymous for optional routes
+  }
+  next();
+}
+
 export function requireRole(roles) {
   const set = new Set(roles);
   return (req, _res, next) => {
