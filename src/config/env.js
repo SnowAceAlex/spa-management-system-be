@@ -13,6 +13,13 @@ const EnvSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(20),
   JWT_ACCESS_TTL: z.string().min(1).default('15m'),
   JWT_REFRESH_TTL: z.string().min(1).default('7d'),
+  AUTH_COOKIE_NAME: z.string().min(1).default('refreshToken'),
+  AUTH_COOKIE_SECURE: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+  AUTH_COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).default('lax'),
+  AUTH_COOKIE_DOMAIN: z.string().optional(),
 
   SEED_ADMIN_EMAIL: z.string().email().optional(),
   SEED_ADMIN_PASSWORD: z.string().min(8).optional(),

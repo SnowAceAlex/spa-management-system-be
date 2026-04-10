@@ -82,8 +82,12 @@ model RefreshToken {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  userAgent    String?
+  ipAddress    String?
+  lastUsedAt   DateTime?
   expiresAt DateTime
   revokedAt DateTime?
+  revokedReason String?
   createdAt DateTime @default(now())
 }
 
