@@ -37,4 +37,3 @@ export function swaggerMiddleware(app) {
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(spec));
   app.get('/docs.json', (_req, res) => res.json(spec));
 }
-

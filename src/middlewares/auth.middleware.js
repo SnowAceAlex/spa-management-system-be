@@ -37,3 +37,11 @@ export function requireRole(roles) {
   };
 }
 
+export function requireSelfOrRole(paramName, roles) {
+  const set = new Set(roles);
+  return (req, _res, next) => {
+    if (!req.user) return next(new HttpError(401, 'Unauthorized', 'AUTH_UNAUTHORIZED'));
+    if (req.params[paramName] === req.user.id || set.has(req.user.role)) return next();
+    return next(new HttpError(403, 'Forbidden', 'AUTH_FORBIDDEN'));
+  };
+}
