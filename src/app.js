@@ -8,6 +8,7 @@ import { notFound, errorHandler } from './middlewares/error.js';
 import { swaggerMiddleware } from '../swagger.js';
 import authRoutes from './routes/auth.routes.js';
 import usersRoutes from './routes/users.routes.js';
+import serviceCategoriesRoutes from './routes/service-categories.routes.js';
 
 export function createApp() {
   const app = express();
@@ -31,6 +32,7 @@ export function createApp() {
 
   app.use('/auth', authRoutes);
   app.use('/users', usersRoutes);
+  app.use('/service-categories', serviceCategoriesRoutes);
 
   app.use(notFound);
   app.use(errorHandler);
