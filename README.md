@@ -17,7 +17,10 @@
 - `src/controllers/*`: handler logic (business)
 - `src/validations/*`: Zod schemas + validate middleware
 - `src/config/db.js`: Prisma client
-- `prisma/schema.prisma`: `User`, `RefreshToken`
+- `prisma/schema.prisma`: `User`, `RefreshToken`, `ServiceCategory`, `Service`, `Staff`, `StaffSpecialization`
+- `src/routes/service-categories.routes.js`: `/service-categories`
+- `src/routes/services.routes.js`: `/services`
+- `src/routes/staff-specializations.routes.js`: `/staff/:staffId/specializations`
 
 ## Setup & chạy local
 
@@ -44,10 +47,12 @@ npx prisma migrate dev
 npx prisma db seed
 ```
 
-Seed mặc định tạo admin theo:
+Seed mặc định tạo các tài khoản sau:
 
-- `SEED_ADMIN_EMAIL` (default `admin@example.com`)
-- `SEED_ADMIN_PASSWORD` (default `Admin12345!`)
+| Role  | Email             | Password    |
+|-------|-------------------|-------------|
+| Admin | admin@example.com | Admin12345! |
+| Staff | staff@example.com | Staff12345! |
 
 ### 4) Run dev
 
@@ -81,3 +86,24 @@ Lưu ý:
 - `npm run prisma:migrate`: prisma migrate dev
 - `npm run prisma:studio`: prisma studio
 - `npm run db:seed`: prisma db seed
+
+## Catalog endpoints
+
+| Method | Path | Auth |
+|--------|------|------|
+| GET | `/service-categories` | Optional |
+| POST | `/service-categories` | Admin |
+| GET | `/service-categories/:id` | Optional |
+| PATCH | `/service-categories/:id` | Admin |
+| DELETE | `/service-categories/:id` | Admin |
+| GET | `/services` | Optional |
+| POST | `/services` | Admin |
+| GET | `/services/:id` | Optional |
+| PATCH | `/services/:id` | Admin |
+| DELETE | `/services/:id` | Admin |
+| GET | `/staff/:staffId/specializations` | Optional |
+| POST | `/staff/:staffId/specializations` | Admin |
+| DELETE | `/staff/:staffId/specializations/:serviceId` | Admin |
+
+> Các route có auth **Optional**: public user thấy data `isActive: true`, admin thêm `?includeInactive=true` để thấy tất cả.
+> Các route **Admin**: cần header `Authorization: Bearer <accessToken>`.
