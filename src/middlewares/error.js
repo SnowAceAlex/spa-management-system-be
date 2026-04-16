@@ -6,9 +6,13 @@ export function errorHandler(err, _req, res, _next) {
   const status = err.statusCode || err.status || 500;
   const message = status >= 500 ? 'Internal server error' : err.message || 'Request failed';
 
-  if (process.env.NODE_ENV !== 'production') {
-    console.error(err);
-  }
+  // Always log errors to help debugging
+  console.error('[ERROR]', {
+    status,
+    message: err.message,
+    code: err.code,
+    stack: err.stack,
+  });
 
   res.status(status).json({
     message,

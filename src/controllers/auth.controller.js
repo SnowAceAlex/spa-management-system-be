@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { Prisma } from '@prisma/client';
 
 import { env } from '../config/env.js';
 import { prisma } from '../config/db.js';
@@ -43,7 +44,7 @@ export async function register(req, res, next) {
           create: {
             firstName,
             lastName,
-            phone,
+            phone: phone || undefined,
           },
         },
       },
@@ -52,6 +53,14 @@ export async function register(req, res, next) {
 
     res.status(201).json({ user });
   } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2002') {
+        const field = err.meta?.target?.[0] || 'field';
+        return next(
+          new HttpError(409, `${field} already exists`, 'AUTH_DUPLICATE_FIELD'),
+        );
+      }
+    }
     next(err);
   }
 }
