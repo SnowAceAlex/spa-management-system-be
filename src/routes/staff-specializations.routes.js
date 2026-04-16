@@ -8,21 +8,21 @@ import { addSpecializationSchema } from '../validations/staff-specializations.va
 import { validateBody } from '../validations/validate.js';
 import { auth, optionalAuth, requireRole } from '../middlewares/auth.middleware.js';
 
-const router = Router({ mergeParams: true });
+const router = Router();
 
 /**
  * @swagger
  * tags:
  *   - name: Staff Specializations
- *     description: Manage which services each staff member can perform
+ *     description: Manage staff-service relationships
  */
 
 /**
  * @swagger
  * /staff/{staffId}/specializations:
  *   get:
+ *     summary: Get all service specializations for a staff member
  *     tags: [Staff Specializations]
- *     summary: Get all specializations for a staff member
  *     parameters:
  *       - in: path
  *         name: staffId
@@ -32,17 +32,28 @@ const router = Router({ mergeParams: true });
  *     responses:
  *       200:
  *         description: List of specializations
- *       404:
- *         description: Staff not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   serviceId:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   price:
+ *                     type: string
  */
-router.get('/', optionalAuth, getSpecializations);
+router.get('/:staffId/specializations', optionalAuth, getSpecializations);
 
 /**
  * @swagger
  * /staff/{staffId}/specializations:
  *   post:
+ *     summary: Add a service specialization to a staff member
  *     tags: [Staff Specializations]
- *     summary: Add a specialization to a staff member (admin)
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -64,13 +75,15 @@ router.get('/', optionalAuth, getSpecializations);
  *     responses:
  *       201:
  *         description: Specialization added
+ *       400:
+ *         description: Validation error
  *       404:
  *         description: Staff or service not found
  *       409:
  *         description: Staff already has this specialization
  */
 router.post(
-  '/',
+  '/:staffId/specializations',
   auth,
   requireRole(['ADMIN']),
   validateBody(addSpecializationSchema),
@@ -81,8 +94,8 @@ router.post(
  * @swagger
  * /staff/{staffId}/specializations/{serviceId}:
  *   delete:
+ *     summary: Remove a service specialization from a staff member
  *     tags: [Staff Specializations]
- *     summary: Remove a specialization from a staff member (admin)
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -98,12 +111,12 @@ router.post(
  *           type: string
  *     responses:
  *       204:
- *         description: Specialization removed
+ *         description: Specialization successfully removed
  *       404:
- *         description: Specialization not found
+ *         description: Staff or specialization not found
  */
 router.delete(
-  '/:serviceId',
+  '/:staffId/specializations/:serviceId',
   auth,
   requireRole(['ADMIN']),
   removeSpecialization

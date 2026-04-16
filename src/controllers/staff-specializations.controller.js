@@ -68,6 +68,7 @@ export async function addSpecialization(req, res, next) {
             id: true,
             name: true,
             price: true,
+            isActive: true,
           },
         },
       },
@@ -96,18 +97,9 @@ export async function removeSpecialization(req, res, next) {
   try {
     const { staffId, serviceId } = req.params;
 
-    // Dùng compound unique key của Prisma để tìm bản ghi
-    const existing = await prisma.staffSpecialization.findUnique({
-      where: {
-        staffId_serviceId: {
-          staffId,
-          serviceId,
-        },
-      },
-    });
-
-    if (!existing) {
-      throw new HttpError(404, 'Specialization not found', 'STAFF_SPECIALIZATION_NOT_FOUND');
+    const staff = await prisma.staff.findUnique({ where: { id: staffId } });
+    if (!staff) {
+      throw new HttpError(404, 'Staff not found', 'STAFF_NOT_FOUND');
     }
 
     await prisma.staffSpecialization.delete({
@@ -121,6 +113,11 @@ export async function removeSpecialization(req, res, next) {
 
     res.status(204).send();
   } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+      return next(
+        new HttpError(404, 'Specialization not found', 'STAFF_SPECIALIZATION_NOT_FOUND')
+      );
+    }
     next(err);
   }
 }
