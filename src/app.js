@@ -10,6 +10,7 @@ import authRoutes from './routes/auth.routes.js';
 import usersRoutes from './routes/users.routes.js';
 import serviceCategoriesRoutes from './routes/service-categories.routes.js';
 import servicesRoutes from './routes/services.routes.js';
+import staffSpecializationsRoutes from './routes/staff-specializations.routes.js';
 
 export function createApp() {
   const app = express();
@@ -35,6 +36,7 @@ export function createApp() {
   app.use('/users', usersRoutes);
   app.use('/service-categories', serviceCategoriesRoutes);
   app.use('/services', servicesRoutes);
+  app.use('/staff', staffSpecializationsRoutes);
 
   app.use(notFound);
   app.use(errorHandler);
