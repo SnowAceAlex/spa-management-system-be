@@ -8,7 +8,7 @@ import { addSpecializationSchema } from '../validations/staff-specializations.va
 import { validateBody } from '../validations/validate.js';
 import { auth, optionalAuth, requireRole } from '../middlewares/auth.middleware.js';
 
-const router = Router({ mergeParams: true });
+const router = Router();
 
 /**
  * @swagger
@@ -46,7 +46,7 @@ const router = Router({ mergeParams: true });
  *                   price:
  *                     type: string
  */
-router.get('/', optionalAuth, getSpecializations);
+router.get('/:staffId/specializations', optionalAuth, getSpecializations);
 
 /**
  * @swagger
@@ -83,7 +83,7 @@ router.get('/', optionalAuth, getSpecializations);
  *         description: Staff already has this specialization
  */
 router.post(
-  '/',
+  '/:staffId/specializations',
   auth,
   requireRole(['ADMIN']),
   validateBody(addSpecializationSchema),
@@ -116,7 +116,7 @@ router.post(
  *         description: Staff or specialization not found
  */
 router.delete(
-  '/:serviceId',
+  '/:staffId/specializations/:serviceId',
   auth,
   requireRole(['ADMIN']),
   removeSpecialization
