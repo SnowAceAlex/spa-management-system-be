@@ -238,7 +238,9 @@ router.patch(
  *       401:
  *         description: Unauthorized
  *       403:
- *         description: Forbidden — service is referenced by appointments
+ *         description: Forbidden
+ *       409:
+ *         description: Service is referenced by appointments
  *       404:
  *         description: Service not found
  */

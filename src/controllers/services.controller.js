@@ -235,7 +235,7 @@ export async function deleteService(req, res, next) {
     const refCount = await prisma.appointmentService.count({ where: { serviceId: id } });
     if (refCount > 0) {
       throw new HttpError(
-        403,
+        409,
         'Cannot delete service that is referenced by appointments',
         'SERVICE_IN_USE',
         { referencedCount: refCount },
