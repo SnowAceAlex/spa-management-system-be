@@ -128,6 +128,71 @@ async function main() {
       serviceId: service2.id,
     },
   });
+
+  await prisma.staffSchedule.upsert({
+    where: {
+      staffId_dayOfWeek: {
+        staffId: staffProfile.id,
+        dayOfWeek: 1,
+      },
+    },
+    update: {
+      startTime: new Date('1970-01-01T09:00:00.000Z'),
+      endTime: new Date('1970-01-01T18:00:00.000Z'),
+      isWorkingDay: true,
+    },
+    create: {
+      staffId: staffProfile.id,
+      dayOfWeek: 1,
+      startTime: new Date('1970-01-01T09:00:00.000Z'),
+      endTime: new Date('1970-01-01T18:00:00.000Z'),
+      isWorkingDay: true,
+    },
+  });
+
+  await prisma.staffSchedule.upsert({
+    where: {
+      staffId_dayOfWeek: {
+        staffId: staffProfile.id,
+        dayOfWeek: 2,
+      },
+    },
+    update: {
+      startTime: new Date('1970-01-01T09:00:00.000Z'),
+      endTime: new Date('1970-01-01T18:00:00.000Z'),
+      isWorkingDay: true,
+    },
+    create: {
+      staffId: staffProfile.id,
+      dayOfWeek: 2,
+      startTime: new Date('1970-01-01T09:00:00.000Z'),
+      endTime: new Date('1970-01-01T18:00:00.000Z'),
+      isWorkingDay: true,
+    },
+  });
+
+  const customerEmail = 'customer@example.com';
+  const customerUser = await prisma.user.upsert({
+    where: { email: customerEmail },
+    update: {},
+    create: {
+      email: customerEmail,
+      passwordHash: await bcrypt.hash('Customer12345!', 12),
+      role: Role.CUSTOMER,
+    },
+  });
+
+  await prisma.customer.upsert({
+    where: { userId: customerUser.id },
+    update: {},
+    create: {
+      userId: customerUser.id,
+      firstName: 'Anh',
+      lastName: 'Tran',
+      phone: '0905558888',
+      notes: 'Seed customer profile for appointment booking tests',
+    },
+  });
 }
 
 main()

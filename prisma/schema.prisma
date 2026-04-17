@@ -209,6 +209,9 @@ model Appointment {
   services      AppointmentService[]
   invoice       Invoice?
   review        Review?
+
+  @@index([staffId, scheduledAt])
+  @@index([customerId, scheduledAt])
 }
 
 model AppointmentService {
