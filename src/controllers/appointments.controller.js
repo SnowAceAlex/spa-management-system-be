@@ -127,92 +127,87 @@ function assertTransitionAllowed(currentStatus, nextStatus) {
 
 export async function createAppointment(req, res, next) {
   try {
-    const appointment = await prisma.$transaction(async (tx) => {
-      if (req.user.role !== 'CUSTOMER') {
-        throw new HttpError(
-          403,
-          'Only customers can create appointments',
-          'APPOINTMENT_CREATE_FORBIDDEN',
-        );
-      }
-
-      const actor = await resolveActorProfile(tx, req.user);
-      const customerId = actor.customerId;
-      const { staffId, scheduledAt, serviceIds, notes } = req.body;
-
-      const staff = await tx.staff.findUnique({
-        where: { id: staffId },
-        select: { id: true, isAvailable: true },
-      });
-      if (!staff || !staff.isAvailable) {
-        throw new HttpError(404, 'Staff not found or unavailable', 'STAFF_NOT_AVAILABLE');
-      }
-
-      const uniqueServiceIds = [...new Set(serviceIds)];
-      const services = await tx.service.findMany({
-        where: { id: { in: uniqueServiceIds }, isActive: true },
-        select: { id: true, price: true, durationMin: true },
-      });
-      if (services.length !== uniqueServiceIds.length) {
-        throw new HttpError(404, 'One or more services not found or inactive', 'SERVICE_NOT_FOUND');
-      }
-
-      const specializations = await tx.staffSpecialization.findMany({
-        where: {
-          staffId,
-          serviceId: { in: uniqueServiceIds },
-        },
-        select: { serviceId: true },
-      });
-      if (specializations.length !== uniqueServiceIds.length) {
-        throw new HttpError(
-          409,
-          'Staff is not specialized for all selected services',
-          'STAFF_NOT_SPECIALIZED',
-        );
-      }
-
-      const totalDurationMin = services.reduce((sum, service) => sum + service.durationMin, 0);
-      const totalAmount = services.reduce(
-        (sum, service) => sum.plus(service.price),
-        new Prisma.Decimal(0),
+    if (req.user.role !== 'CUSTOMER') {
+      throw new HttpError(
+        403,
+        'Only customers can create appointments',
+        'APPOINTMENT_CREATE_FORBIDDEN',
       );
-      const startsAt = new Date(scheduledAt);
-      const endsAt = new Date(startsAt.getTime() + totalDurationMin * 60 * 1000);
+    }
 
-      await assertScheduleAndNoConflict(tx, { staffId, scheduledAt: startsAt, endsAt });
+    const actor = await resolveActorProfile(prisma, req.user);
+    const customerId = actor.customerId;
+    const { staffId, scheduledAt, serviceIds, notes } = req.body;
 
-      return tx.appointment.create({
-        data: {
-          customerId,
-          staffId,
-          scheduledAt: startsAt,
-          endsAt,
-          notes: notes ?? undefined,
-          totalAmount,
-          paymentStatus: 'UNPAID',
-          services: {
-            create: services.map((service) => ({
-              serviceId: service.id,
-              priceSnapshot: service.price,
-              durationMin: service.durationMin,
-            })),
-          },
+    const staff = await prisma.staff.findUnique({
+      where: { id: staffId },
+      select: { id: true, isAvailable: true },
+    });
+    if (!staff || !staff.isAvailable) {
+      throw new HttpError(404, 'Staff not found or unavailable', 'STAFF_NOT_AVAILABLE');
+    }
+
+    const uniqueServiceIds = [...new Set(serviceIds)];
+    const services = await prisma.service.findMany({
+      where: { id: { in: uniqueServiceIds }, isActive: true },
+      select: { id: true, price: true, durationMin: true },
+    });
+    if (services.length !== uniqueServiceIds.length) {
+      throw new HttpError(404, 'One or more services not found or inactive', 'SERVICE_NOT_FOUND');
+    }
+
+    const specializations = await prisma.staffSpecialization.findMany({
+      where: {
+        staffId,
+        serviceId: { in: uniqueServiceIds },
+      },
+      select: { serviceId: true },
+    });
+    if (specializations.length !== uniqueServiceIds.length) {
+      throw new HttpError(
+        409,
+        'Staff is not specialized for all selected services',
+        'STAFF_NOT_SPECIALIZED',
+      );
+    }
+
+    const totalDurationMin = services.reduce((sum, service) => sum + service.durationMin, 0);
+    const totalAmount = services.reduce((sum, service) => sum.plus(service.price), new Prisma.Decimal(0));
+    const startsAt = new Date(scheduledAt);
+    const endsAt = new Date(startsAt.getTime() + totalDurationMin * 60 * 1000);
+
+    await assertScheduleAndNoConflict(prisma, { staffId, scheduledAt: startsAt, endsAt });
+
+    const appointment = await prisma.appointment.create({
+      data: {
+        customerId,
+        staffId,
+        scheduledAt: startsAt,
+        endsAt,
+        notes: notes ?? undefined,
+        totalAmount,
+        paymentStatus: 'UNPAID',
+        services: {
+          create: services.map((service) => ({
+            serviceId: service.id,
+            priceSnapshot: service.price,
+            durationMin: service.durationMin,
+          })),
         },
-        include: {
-          services: {
-            include: {
-              service: {
-                select: {
-                  id: true,
-                  name: true,
-                  price: true,
-                },
+      },
+      include: {
+        services: {
+          include: {
+            service: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
               },
             },
           },
         },
-      });
+      },
     });
 
     res.status(201).json({ appointment: normalizeAppointmentRow(appointment) });
