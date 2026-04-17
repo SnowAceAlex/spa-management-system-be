@@ -13,6 +13,8 @@ import servicesRoutes from './routes/services.routes.js';
 import staffSpecializationsRoutes from './routes/staff-specializations.routes.js';
 import staffSchedulesRoutes from './routes/staff-schedules.routes.js';
 import appointmentsRoutes from './routes/appointments.routes.js';
+import invoicesRoutes from './routes/invoices.routes.js';
+import webhooksRoutes from './routes/webhooks.routes.js';
 
 export function createApp() {
   const app = express();
@@ -24,6 +26,9 @@ export function createApp() {
       credentials: true,
     }),
   );
+
+  app.use('/webhooks', express.raw({ type: 'application/json' }), webhooksRoutes);
+
   app.use(cookieParser());
   app.use(express.json({ limit: '1mb' }));
   app.use(morgan('dev'));
@@ -41,6 +46,7 @@ export function createApp() {
   app.use('/staff', staffSpecializationsRoutes);
   app.use('/staff', staffSchedulesRoutes);
   app.use('/appointments', appointmentsRoutes);
+  app.use('/invoices', invoicesRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

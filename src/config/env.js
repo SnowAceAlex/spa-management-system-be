@@ -23,6 +23,11 @@ const EnvSchema = z.object({
 
   SEED_ADMIN_EMAIL: z.string().email().optional(),
   SEED_ADMIN_PASSWORD: z.string().min(8).optional(),
+  STRIPE_SECRET_KEY: z.string().min(1).optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+  STRIPE_SUCCESS_URL: z.string().url().default('http://localhost:5173/payment/success'),
+  STRIPE_CANCEL_URL: z.string().url().default('http://localhost:5173/payment/cancel'),
+  STRIPE_CURRENCY: z.string().min(3).max(3).default('vnd'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

@@ -6,6 +6,7 @@ import {
   listAppointments,
   updateAppointmentStatus,
 } from '../controllers/appointments.controller.js';
+import { generateInvoiceForAppointment } from '../controllers/invoices.controller.js';
 import { auth, requireRole } from '../middlewares/auth.middleware.js';
 import { validateBody } from '../validations/validate.js';
 import {
@@ -268,4 +269,36 @@ router.patch(
   cancelAppointment,
 );
 
+/**
+ * @swagger
+ * /appointments/{id}/invoice:
+ *   post:
+ *     tags: [Appointments, Invoices]
+ *     summary: Generate (or fetch existing) invoice for a completed appointment
+ *     description: |
+ *       Idempotent. If an invoice already exists for the appointment, returns it with status 200.
+ *       Otherwise creates a new invoice (status UNPAID) and returns 201. Appointment must be in COMPLETED state.
+ *       Staff can only generate for appointments assigned to them; admins can generate any.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *         description: Appointment ID
+ *     responses:
+ *       200: { description: Existing invoice returned }
+ *       201: { description: Invoice created }
+ *       401: { description: Unauthorized }
+ *       403: { description: Forbidden }
+ *       404: { description: Appointment not found }
+ *       409: { description: Appointment not yet completed }
+ */
+router.post(
+  '/:id/invoice',
+  auth,
+  requireRole(['ADMIN', 'STAFF']),
+  generateInvoiceForAppointment,
+);
 export default router;

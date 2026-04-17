@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/db.js';
 import { HttpError } from '../utils/httpError.js';
+import { createInvoiceForAppointment } from '../services/invoice.service.js';
 
 const TERMINAL_STATUSES = new Set(['COMPLETED', 'CANCELLED', 'NO_SHOW']);
 const ACTIVE_BLOCKING_STATUSES = ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED'];
@@ -334,16 +335,24 @@ export async function updateAppointmentStatus(req, res, next) {
     }
     assertTransitionAllowed(appointment.status, req.body.status);
 
-    const updated = await prisma.appointment.update({
-      where: { id: req.params.id },
-      data: { status: req.body.status },
-      include: {
-        services: {
-          include: {
-            service: { select: { id: true, name: true, price: true } },
+    const updated = await prisma.$transaction(async (tx) => {
+      const u = await tx.appointment.update({
+        where: { id: req.params.id },
+        data: { status: req.body.status },
+        include: {
+          services: {
+            include: {
+              service: { select: { id: true, name: true, price: true } },
+            },
           },
         },
-      },
+      });
+
+      if (req.body.status === 'COMPLETED') {
+        await createInvoiceForAppointment(tx, u.id);
+      }
+
+      return u;
     });
 
     res.json({ appointment: normalizeAppointmentRow(updated) });
