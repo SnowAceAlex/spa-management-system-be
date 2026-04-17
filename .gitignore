@@ -1,0 +1,14 @@
+node_modules
+.env
+.env.*
+dist
+coverage
+*.log
+.DS_Store
+prisma/migrations
+
+# Local development artifacts
+.agents/
+skills-lock.json
+.neon/
+
