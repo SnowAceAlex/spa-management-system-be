@@ -182,7 +182,7 @@ async function main() {
     },
   });
 
-  await prisma.customer.upsert({
+  const customer = await prisma.customer.upsert({
     where: { userId: customerUser.id },
     update: {},
     create: {
@@ -191,6 +191,18 @@ async function main() {
       lastName: 'Tran',
       phone: '0905558888',
       notes: 'Seed customer profile for appointment booking tests',
+    },
+  });
+
+  // Initialize loyalty account with GUEST tier
+  await prisma.loyaltyAccount.upsert({
+    where: { customerId: customer.id },
+    update: {},
+    create: {
+      customerId: customer.id,
+      tier: 'GUEST',
+      totalPoints: 0,
+      lifetimePoints: 0,
     },
   });
 }

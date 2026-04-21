@@ -1,36 +1,27 @@
-import { Router } from 'express';
-import {
-  cancelAppointment,
-  createAppointment,
-  getAppointmentById,
-  listAppointments,
-  updateAppointmentStatus,
-} from '../controllers/appointments.controller.js';
-import { generateInvoiceForAppointment } from '../controllers/invoices.controller.js';
+import express from 'express';
 import { auth, requireRole } from '../middlewares/auth.middleware.js';
 import { validateBody } from '../validations/validate.js';
 import {
-  CancelAppointmentSchema,
+  createAppointment,
+  listAppointments,
+  getAppointmentById,
+  updateAppointmentStatus,
+  deleteAppointment,
+} from '../controllers/appointments.controller.js';
+import {
   CreateAppointmentSchema,
   UpdateAppointmentStatusSchema,
+  ListAppointmentsQuerySchema,
 } from '../validations/appointments.validation.js';
 
-const router = Router();
-
-/**
- * @swagger
- * tags:
- *   - name: Appointments
- *     description: Appointment booking and lifecycle
- */
+const router = express.Router();
 
 /**
  * @swagger
  * /appointments:
  *   post:
+ *     summary: Create new appointment (with auto-applied loyalty discount)
  *     tags: [Appointments]
- *     summary: Create appointment (customer)
- *     description: Creates a new appointment for the authenticated customer with selected staff and services.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -39,59 +30,47 @@ const router = Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [staffId, scheduledAt, serviceIds]
+ *             required: [customerId, staffId, serviceIds, scheduledAt]
  *             properties:
+ *               customerId:
+ *                 type: string
+ *                 description: Customer ID
  *               staffId:
  *                 type: string
- *                 description: Staff profile ID
+ *                 description: Staff member ID
+ *               serviceIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of service IDs to book
  *               scheduledAt:
  *                 type: string
  *                 format: date-time
- *                 example: "2026-04-20T10:00:00.000Z"
- *                 description: Appointment start time in UTC
- *               serviceIds:
- *                 type: array
- *                 minItems: 1
- *                 items:
- *                   type: string
- *                 description: List of service IDs to include
+ *                 description: Appointment start time (ISO 8601)
  *               notes:
  *                 type: string
- *                 nullable: true
- *                 description: Optional customer note
+ *                 description: Optional appointment notes
  *     responses:
  *       201:
- *         description: Appointment created
+ *         description: Appointment created successfully
  *       400:
- *         description: Validation error
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
+ *         description: Invalid input
  *       404:
- *         description: Staff/service not found
- *       409:
- *         description: Conflict (overlap, out of working hours, or missing specialization)
+ *         description: Customer, staff, or service not found
  */
 router.post(
-  '/',
+  '/appointments',
   auth,
-  requireRole(['CUSTOMER']),
   validateBody(CreateAppointmentSchema),
-  createAppointment,
+  createAppointment
 );
 
 /**
  * @swagger
  * /appointments:
  *   get:
+ *     summary: List appointments with pagination and filters
  *     tags: [Appointments]
- *     summary: List appointments (role-filtered)
- *     description: |
- *       Returns appointments scoped by role:
- *       - CUSTOMER: own appointments
- *       - STAFF: assigned appointments
- *       - ADMIN: all appointments
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -100,55 +79,43 @@ router.post(
  *         schema:
  *           type: integer
  *           default: 1
- *         description: Page number (1-indexed)
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
  *           default: 10
- *         description: Items per page (max 100)
+ *           maximum: 100
  *       - in: query
  *         name: status
  *         schema:
  *           type: string
  *           enum: [PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW]
- *         description: Filter by appointment status
- *       - in: query
- *         name: date
- *         schema:
- *           type: string
- *           format: date
- *         example: "2026-04-20"
- *         description: Filter appointments by scheduled date (UTC day)
- *       - in: query
- *         name: staffId
- *         schema:
- *           type: string
- *         description: Admin-only filter by staff ID
  *       - in: query
  *         name: customerId
  *         schema:
  *           type: string
- *         description: Admin-only filter by customer ID
+ *         description: Filter by customer (Admin/Staff only)
+ *       - in: query
+ *         name: staffId
+ *         schema:
+ *           type: string
+ *         description: Filter by staff (Admin/Staff only)
  *     responses:
  *       200:
- *         description: Appointment list
- *       400:
- *         description: Invalid query parameters
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
+ *         description: List of appointments
  */
-router.get('/', auth, requireRole(['ADMIN', 'STAFF', 'CUSTOMER']), listAppointments);
+router.get(
+  '/appointments',
+  auth,
+  listAppointments
+);
 
 /**
  * @swagger
  * /appointments/{id}:
  *   get:
- *     tags: [Appointments]
  *     summary: Get appointment detail
- *     description: Returns appointment details if caller has permission (admin, assigned staff, or owner customer).
+ *     tags: [Appointments]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -157,26 +124,22 @@ router.get('/', auth, requireRole(['ADMIN', 'STAFF', 'CUSTOMER']), listAppointme
  *         required: true
  *         schema:
  *           type: string
- *         description: Appointment ID
  *     responses:
  *       200:
- *         description: Appointment detail
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
+ *         description: Appointment details
  *       404:
  *         description: Appointment not found
+ *       403:
+ *         description: Unauthorized access
  */
-router.get('/:id', auth, requireRole(['ADMIN', 'STAFF', 'CUSTOMER']), getAppointmentById);
+router.get('/appointments/:id', auth, getAppointmentById);
 
 /**
  * @swagger
  * /appointments/{id}/status:
  *   patch:
+ *     summary: Update appointment status (Earns loyalty points when COMPLETED)
  *     tags: [Appointments]
- *     summary: Update appointment status (staff/admin)
- *     description: Updates appointment workflow status with transition rules.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -185,7 +148,6 @@ router.get('/:id', auth, requireRole(['ADMIN', 'STAFF', 'CUSTOMER']), getAppoint
  *         required: true
  *         schema:
  *           type: string
- *         description: Appointment ID
  *     requestBody:
  *       required: true
  *       content:
@@ -197,36 +159,24 @@ router.get('/:id', auth, requireRole(['ADMIN', 'STAFF', 'CUSTOMER']), getAppoint
  *               status:
  *                 type: string
  *                 enum: [PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW]
- *                 description: Next status according to allowed transitions
  *     responses:
  *       200:
- *         description: Appointment status updated
- *       400:
- *         description: Validation error
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
- *       404:
- *         description: Appointment not found
- *       409:
- *         description: Invalid transition or terminal status lock
+ *         description: Status updated
  */
 router.patch(
-  '/:id/status',
+  '/appointments/:id/status',
   auth,
   requireRole(['ADMIN', 'STAFF']),
   validateBody(UpdateAppointmentStatusSchema),
-  updateAppointmentStatus,
+  updateAppointmentStatus
 );
 
 /**
  * @swagger
- * /appointments/{id}/cancel:
- *   patch:
+ * /appointments/{id}:
+ *   delete:
+ *     summary: Cancel appointment (refunds loyalty points if earned)
  *     tags: [Appointments]
- *     summary: Cancel appointment (customer owner, assigned staff, or admin)
- *     description: Cancels an appointment with optional reason, if cancellation policy allows.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -235,70 +185,17 @@ router.patch(
  *         required: true
  *         schema:
  *           type: string
- *         description: Appointment ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               reason:
- *                 type: string
- *                 nullable: true
- *                 description: Optional cancellation reason
  *     responses:
- *       200:
+ *       204:
  *         description: Appointment cancelled
- *       400:
- *         description: Validation error
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
  *       404:
  *         description: Appointment not found
- *       409:
- *         description: Cancellation not allowed by status policy
  */
-router.patch(
-  '/:id/cancel',
+router.delete(
+  '/appointments/:id',
   auth,
-  requireRole(['ADMIN', 'STAFF', 'CUSTOMER']),
-  validateBody(CancelAppointmentSchema),
-  cancelAppointment,
+  requireRole(['ADMIN']),
+  deleteAppointment
 );
 
-/**
- * @swagger
- * /appointments/{id}/invoice:
- *   post:
- *     tags: [Appointments, Invoices]
- *     summary: Generate (or fetch existing) invoice for a completed appointment
- *     description: |
- *       Idempotent. If an invoice already exists for the appointment, returns it with status 200.
- *       Otherwise creates a new invoice (status UNPAID) and returns 201. Appointment must be in COMPLETED state.
- *       Staff can only generate for appointments assigned to them; admins can generate any.
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: string }
- *         description: Appointment ID
- *     responses:
- *       200: { description: Existing invoice returned }
- *       201: { description: Invoice created }
- *       401: { description: Unauthorized }
- *       403: { description: Forbidden }
- *       404: { description: Appointment not found }
- *       409: { description: Appointment not yet completed }
- */
-router.post(
-  '/:id/invoice',
-  auth,
-  requireRole(['ADMIN', 'STAFF']),
-  generateInvoiceForAppointment,
-);
 export default router;

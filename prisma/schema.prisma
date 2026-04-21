@@ -55,10 +55,6 @@ enum DiscountType {
   PERCENTAGE
 }
 
-enum PaymentMethod {
-  STRIPE
-  CASH
-}
 enum LoyaltyTier {
   GUEST
   BRONZE
@@ -214,9 +210,6 @@ model Appointment {
   services      AppointmentService[]
   invoice       Invoice?
   review        Review?
-
-  @@index([staffId, scheduledAt])
-  @@index([customerId, scheduledAt])
 }
 
 model AppointmentService {
@@ -237,18 +230,14 @@ model Invoice {
   appointmentId String        @unique
   appointment   Appointment   @relation(fields: [appointmentId], references: [id])
 
-  invoiceNumber String?       @unique
   subtotal      Decimal       @db.Decimal(10, 2)
   discountAmt   Decimal       @db.Decimal(10, 2) @default(0)
   taxAmt        Decimal       @db.Decimal(10, 2) @default(0)
   totalAmt      Decimal       @db.Decimal(10, 2)
   paidAmt       Decimal       @db.Decimal(10, 2) @default(0)
   paymentStatus PaymentStatus @default(UNPAID)
-  paymentMethod PaymentMethod?
   paidAt        DateTime?
 
-  stripeCheckoutSessionId String? @unique
-  stripePaymentIntentId   String? @unique
   pointsUsed    Int           @default(0)
   pointsEarned  Int           @default(0)
 
@@ -265,7 +254,7 @@ model LoyaltyAccount {
 
   totalPoints    Int      @default(0)
   lifetimePoints Int      @default(0)
-  tier           LoyaltyTier @default(BRONZE)
+  tier           LoyaltyTier @default(GUEST)
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
