@@ -60,6 +60,7 @@ enum PaymentMethod {
   CASH
 }
 enum LoyaltyTier {
+  GUEST
   BRONZE
   SILVER
   GOLD
