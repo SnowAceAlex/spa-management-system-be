@@ -36,7 +36,7 @@ export const listAvailableRewards = async () => {
 
 export const claimReward = async (customerId, rewardId) => {
   return await prisma.$transaction(async (tx) => {
-    // 1. Lấy thông tin tài khoản và phần thưởng
+    // 1. Get account and reward information
     const [account, reward] = await Promise.all([
       tx.loyaltyAccount.findUnique({ where: { customerId } }),
       tx.loyaltyReward.findUnique({ where: { id: rewardId, isActive: true } })
@@ -47,24 +47,24 @@ export const claimReward = async (customerId, rewardId) => {
 
     const newBalance = account.totalPoints - reward.pointsCost;
 
-    // 2. Trừ điểm trong tài khoản
+    // 2. Deduct points from the account
     await tx.loyaltyAccount.update({
       where: { customerId },
       data: { totalPoints: newBalance }
     });
 
-    // 3. Ghi log giao dịch (bắt buộc có balanceAfter theo schema)
+    // 3. Create transaction log (balanceAfter is required by schema)
     await tx.loyaltyTransaction.create({
       data: {
         loyaltyAccountId: account.id,
         type: 'REDEEM',
         points: -reward.pointsCost,
         balanceAfter: newBalance,
-        description: `Đổi phần thưởng: ${reward.name}`
+        description: `Redeemed reward: ${reward.name}`
       }
     });
 
-    // 4. Tạo CustomerReward cho khách
+    // 4. Create CustomerReward record
     return await tx.customerReward.create({
       data: {
         loyaltyAccountId: account.id,

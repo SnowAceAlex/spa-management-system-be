@@ -4,7 +4,7 @@ import { prisma } from '../config/db.js';
 
 export async function getMyLoyaltyInfo(req, res, next) {
   try {
-    // 🔥 Convert userId → customerId
+    //Convert userId → customerId
     const customer = await prisma.customer.findUnique({
       where: { userId: req.user.id }
     });

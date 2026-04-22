@@ -10,20 +10,20 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Loyalty
- *   description: Quản lý điểm thưởng và đổi quà
+ *   description: Loyalty points and rewards management
  */
 
 /**
  * @swagger
  * /loyalty/me:
  *   get:
- *     summary: Xem thông tin ví điểm của tôi
+ *     summary: Get my loyalty wallet information
  *     tags: [Loyalty]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Trả về thông tin ví điểm và 10 giao dịch gần nhất
+ *         description: Returns wallet info and last 10 transactions
  */
 router.get(
   '/me',
@@ -36,7 +36,7 @@ router.get(
  * @swagger
  * /loyalty/transactions:
  *   get:
- *     summary: Xem lịch sử giao dịch điểm (Earn/Redeem)
+ *     summary: Get loyalty transaction history (Earn/Redeem)
  *     tags: [Loyalty]
  *     security:
  *       - bearerAuth: []
@@ -53,7 +53,7 @@ router.get(
  *           default: 10
  *     responses:
  *       200:
- *         description: Danh sách giao dịch có phân trang
+ *         description: Paginated list of transactions
  */
 router.get(
   '/transactions',
@@ -67,13 +67,13 @@ router.get(
  * @swagger
  * /loyalty/rewards:
  *   get:
- *     summary: Lấy danh sách các phần thưởng có thể đổi
+ *     summary: Get list of available rewards
  *     tags: [Loyalty]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Danh sách các gói quà tặng đang hoạt động
+ *         description: List of active reward packages
  */
 router.get(
   '/rewards',
@@ -85,7 +85,7 @@ router.get(
  * @swagger
  * /loyalty/rewards/{rewardId}/claim:
  *   post:
- *     summary: Đổi phần thưởng bằng điểm tích lũy
+ *     summary: Redeem a reward using loyalty points
  *     tags: [Loyalty]
  *     security:
  *       - bearerAuth: []
@@ -95,14 +95,14 @@ router.get(
  *         required: true
  *         schema:
  *           type: string
- *         description: ID của phần thưởng từ bảng LoyaltyReward
+ *         description: Reward ID from LoyaltyReward table
  *     responses:
  *       201:
- *         description: Đổi quà thành công, điểm đã được trừ
+ *         description: Reward successfully redeemed, points deducted
  *       400:
- *         description: Không đủ điểm để đổi quà
+ *         description: Not enough points to redeem reward
  *       404:
- *         description: Không tìm thấy phần thưởng
+ *         description: Reward not found
  */
 router.post(
   '/rewards/:rewardId/claim',

@@ -1,27 +1,27 @@
 import { createApp } from './src/app.js';
 import { env } from './src/config/env.js';
-import { prisma } from './src/config/db.js'; // Đảm bảo đúng đường dẫn tới file prisma client
+import { prisma } from './src/config/db.js'; // Ensure correct path to Prisma client file
 
 const app = createApp();
 
 async function startServer() {
   try {
-    // 1. Kiểm tra kết nối Database trước khi chạy server
+    // 1. Check database connection before starting the server
     console.log('Connecting to database...');
     await prisma.$connect();
     console.log('Database connected successfully');
 
-    // 2. Khởi động API
+    // 2. Start the API server
     const server = app.listen(env.PORT, () => {
       console.log(`API listening on http://localhost:${env.PORT}`);
-      console.log(`Swagger docs at http://localhost:${env.PORT}/docs`);
+      console.log(`Swagger docs available at http://localhost:${env.PORT}/docs`);
     });
 
-    // 3. Graceful shutdown
+    // 3. Graceful shutdown handling
     function shutdown(signal) {
       console.log(`Received ${signal}, shutting down...`);
       server.close(async () => {
-        await prisma.$disconnect(); // Đóng kết nối prisma khi tắt server
+        await prisma.$disconnect(); // Close Prisma connection on shutdown
         process.exit(0);
       });
     }

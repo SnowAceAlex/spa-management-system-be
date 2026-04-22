@@ -5,7 +5,6 @@ export const GetTransactionsSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(10),
 });
 
-// SỬA CHỖ NÀY: Bọc nó lại trong object tương ứng với params
 export const ClaimRewardParamsSchema = z.object({
   rewardId: z.string().trim().min(1),
 });
