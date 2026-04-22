@@ -193,6 +193,50 @@ async function main() {
       notes: 'Seed customer profile for appointment booking tests',
     },
   });
+  // Sau đoạn upsert Customer ở cuối file seed cũ của bạn
+  const customerProfile = await prisma.customer.findUnique({ 
+    where: { userId: customerUser.id } 
+  });
+
+  if (customerProfile) {
+    // 1. Tạo ví điểm cho khách hàng mẫu
+    const loyaltyAcc = await prisma.loyaltyAccount.upsert({
+      where: { customerId: customerProfile.id },
+      update: {},
+      create: {
+        customerId: customerProfile.id,
+        totalPoints: 1000,
+        lifetimePoints: 1000,
+        tier: 'SILVER',
+      },
+    });
+
+    // 2. Tạo phần thưởng mẫu
+    await prisma.loyaltyReward.upsert({
+      where: { id: 'seed-reward-1' },
+      update: {},
+      create: {
+        id: 'seed-reward-1',
+        name: 'Voucher Giảm 10%',
+        description: 'Đổi 200 điểm lấy mã giảm giá 10%',
+        pointsCost: 200,
+        discountType: 'PERCENTAGE',
+        discountValue: new Prisma.Decimal('10.00'),
+        validDays: 30,
+      },
+    });
+
+    // 3. Tạo một lịch sử giao dịch mẫu
+    await prisma.loyaltyTransaction.create({
+      data: {
+        loyaltyAccountId: loyaltyAcc.id,
+        type: 'EARN',
+        points: 1000,
+        balanceAfter: 1000,
+        description: 'Hệ thống tặng điểm chào mừng',
+      }
+    });
+  }
 }
 
 main()
