@@ -14,7 +14,9 @@ import staffSpecializationsRoutes from './routes/staff-specializations.routes.js
 import staffSchedulesRoutes from './routes/staff-schedules.routes.js';
 import appointmentsRoutes from './routes/appointments.routes.js';
 import invoicesRoutes from './routes/invoices.routes.js';
+import loyaltyRoutes from './routes/loyalty.routes.js';
 import webhooksRoutes from './routes/webhooks.routes.js';
+
 
 export function createApp() {
   const app = express();
@@ -47,6 +49,7 @@ export function createApp() {
   app.use('/staff', staffSchedulesRoutes);
   app.use('/appointments', appointmentsRoutes);
   app.use('/invoices', invoicesRoutes);
+  app.use('/loyalty', loyaltyRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

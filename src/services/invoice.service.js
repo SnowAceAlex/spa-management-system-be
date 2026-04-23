@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { HttpError } from '../utils/httpError.js';
+import { awardPointsForPaidInvoice } from './loyalty.service.js';
 
 const ZERO_DECIMAL_CURRENCIES = new Set([
   'bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf',
@@ -132,6 +133,10 @@ export async function applyPayment(
     where: { id: invoice.appointmentId },
     data: { paymentStatus },
   });
+
+  if (invoice.paymentStatus !== 'PAID' && paymentStatus === 'PAID') {
+    await awardPointsForPaidInvoice(tx, invoice.id);
+  }
 
   return updated;
 }

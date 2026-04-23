@@ -21,3 +21,30 @@ export function validateBody(schema) {
     next();
   };
 }
+
+// Bổ sung thêm 2 hàm này để dùng cho Loyalty
+export function validateQuery(schema) {
+  return (req, _res, next) => {
+    const parsed = schema.safeParse(req.query);
+    if (!parsed.success) {
+      return next(new HttpError(400, 'Invalid query parameters', 'VALIDATION_ERROR', {
+        fields: parsed.error.flatten().fieldErrors,
+      }));
+    }
+    req.query = parsed.data;
+    next();
+  };
+}
+
+export function validateParams(schema) {
+  return (req, _res, next) => {
+    const parsed = schema.safeParse(req.params);
+    if (!parsed.success) {
+      return next(new HttpError(400, 'Invalid path parameters', 'VALIDATION_ERROR', {
+        fields: parsed.error.flatten().fieldErrors,
+      }));
+    }
+    req.params = parsed.data;
+    next();
+  };
+}
