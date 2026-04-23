@@ -28,11 +28,26 @@ const EnvSchema = z.object({
   STRIPE_SUCCESS_URL: z.string().url().default('http://localhost:5173/payment/success'),
   STRIPE_CANCEL_URL: z.string().url().default('http://localhost:5173/payment/cancel'),
   STRIPE_CURRENCY: z.string().min(3).max(3).default('vnd'),
+
+  LOYALTY_POINTS_PER_SPEND_UNIT: z.coerce.number().positive().default(10000),
+  LOYALTY_SILVER_MIN_POINTS: z.coerce.number().int().nonnegative().default(500),
+  LOYALTY_GOLD_MIN_POINTS: z.coerce.number().int().nonnegative().default(1500),
+  LOYALTY_PLATINUM_MIN_POINTS: z.coerce.number().int().nonnegative().default(3000),
 });
 
 const parsed = EnvSchema.safeParse(process.env);
 if (!parsed.success) {
   console.error('Invalid environment variables:', parsed.error.flatten().fieldErrors);
+  process.exit(1);
+}
+
+if (
+  parsed.data.LOYALTY_SILVER_MIN_POINTS > parsed.data.LOYALTY_GOLD_MIN_POINTS ||
+  parsed.data.LOYALTY_GOLD_MIN_POINTS > parsed.data.LOYALTY_PLATINUM_MIN_POINTS
+) {
+  console.error(
+    'Invalid loyalty tier thresholds: expected SILVER <= GOLD <= PLATINUM minimum points.',
+  );
   process.exit(1);
 }
 

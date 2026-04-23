@@ -14,8 +14,8 @@ import staffSpecializationsRoutes from './routes/staff-specializations.routes.js
 import staffSchedulesRoutes from './routes/staff-schedules.routes.js';
 import appointmentsRoutes from './routes/appointments.routes.js';
 import invoicesRoutes from './routes/invoices.routes.js';
-import webhooksRoutes from './routes/webhooks.routes.js';
 import loyaltyRoutes from './routes/loyalty.routes.js';
+import webhooksRoutes from './routes/webhooks.routes.js';
 
 
 export function createApp() {

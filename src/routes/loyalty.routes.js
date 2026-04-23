@@ -1,115 +1,58 @@
 import { Router } from 'express';
-import * as loyaltyController from '../controllers/loyalty.controller.js';
+import { getCustomerLoyalty, getMyLoyalty } from '../controllers/loyalty.controller.js';
 import { auth, requireRole } from '../middlewares/auth.middleware.js';
-import { validateQuery, validateParams } from '../validations/validate.js';
-import * as loyaltyValidation from '../validations/loyalty.validation.js';
 
 const router = Router();
 
 /**
  * @swagger
  * tags:
- *   name: Loyalty
- *   description: Loyalty points and rewards management
+ *   - name: Loyalty
+ *     description: Loyalty score and tier endpoints
  */
 
 /**
  * @swagger
  * /loyalty/me:
  *   get:
- *     summary: Get my loyalty wallet information
  *     tags: [Loyalty]
+ *     summary: Get current customer loyalty score
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Returns wallet info and last 10 transactions
+ *         description: Loyalty score
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
  */
-router.get(
-  '/me',
-  auth,
-  requireRole(['CUSTOMER']),
-  loyaltyController.getMyLoyaltyInfo
-);
+router.get('/me', auth, requireRole(['CUSTOMER']), getMyLoyalty);
 
 /**
  * @swagger
- * /loyalty/transactions:
+ * /loyalty/customers/{customerId}:
  *   get:
- *     summary: Get loyalty transaction history (Earn/Redeem)
  *     tags: [Loyalty]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *     responses:
- *       200:
- *         description: Paginated list of transactions
- */
-router.get(
-  '/transactions',
-  auth,
-  requireRole(['CUSTOMER']),
-  validateQuery(loyaltyValidation.GetTransactionsSchema),
-  loyaltyController.getMyTransactions
-);
-
-/**
- * @swagger
- * /loyalty/rewards:
- *   get:
- *     summary: Get list of available rewards
- *     tags: [Loyalty]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of active reward packages
- */
-router.get(
-  '/rewards',
-  auth,
-  loyaltyController.getAvailableRewards
-);
-
-/**
- * @swagger
- * /loyalty/rewards/{rewardId}/claim:
- *   post:
- *     summary: Redeem a reward using loyalty points
- *     tags: [Loyalty]
+ *     summary: Get loyalty score by customer ID (admin only)
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: rewardId
+ *         name: customerId
  *         required: true
  *         schema:
  *           type: string
- *         description: Reward ID from LoyaltyReward table
  *     responses:
- *       201:
- *         description: Reward successfully redeemed, points deducted
- *       400:
- *         description: Not enough points to redeem reward
+ *       200:
+ *         description: Loyalty score
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
  *       404:
- *         description: Reward not found
+ *         description: Customer not found
  */
-router.post(
-  '/rewards/:rewardId/claim',
-  auth,
-  requireRole(['CUSTOMER']),
-  validateParams(loyaltyValidation.ClaimRewardParamsSchema),
-  loyaltyController.claimReward
-);
+router.get('/customers/:customerId', auth, requireRole(['ADMIN']), getCustomerLoyalty);
 
 export default router;

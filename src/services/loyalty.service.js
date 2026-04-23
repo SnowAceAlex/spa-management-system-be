@@ -1,3 +1,121 @@
+import { Prisma } from '@prisma/client';
+import { env } from '../config/env.js';
+import { HttpError } from '../utils/httpError.js';
+
+export function calculateEarnedPoints(totalAmount) {
+  const amount =
+    totalAmount instanceof Prisma.Decimal ? Number(totalAmount.toString()) : Number(totalAmount);
+  if (!Number.isFinite(amount) || amount <= 0) return 0;
+  return Math.floor(amount / env.LOYALTY_POINTS_PER_SPEND_UNIT);
+}
+
+export function resolveTierByLifetimePoints(lifetimePoints) {
+  const points = Number(lifetimePoints) || 0;
+  if (points >= env.LOYALTY_PLATINUM_MIN_POINTS) return 'PLATINUM';
+  if (points >= env.LOYALTY_GOLD_MIN_POINTS) return 'GOLD';
+  if (points >= env.LOYALTY_SILVER_MIN_POINTS) return 'SILVER';
+  return 'BRONZE';
+}
+
+export async function ensureLoyaltyAccount(tx, customerId) {
+  return tx.loyaltyAccount.upsert({
+    where: { customerId },
+    update: {},
+    create: { customerId },
+  });
+}
+
+export async function awardPointsForPaidInvoice(tx, invoiceId) {
+  const invoice = await tx.invoice.findUnique({
+    where: { id: invoiceId },
+    select: {
+      id: true,
+      totalAmt: true,
+      paymentStatus: true,
+      pointsEarned: true,
+      appointment: {
+        select: {
+          customerId: true,
+        },
+      },
+    },
+  });
+  if (!invoice) {
+    throw new HttpError(404, 'Invoice not found', 'INVOICE_NOT_FOUND');
+  }
+  if (invoice.paymentStatus !== 'PAID') {
+    return { awarded: false, reason: 'INVOICE_NOT_PAID' };
+  }
+  if (invoice.pointsEarned > 0) {
+    return { awarded: false, reason: 'ALREADY_AWARDED' };
+  }
+  if (!invoice.appointment?.customerId) {
+    throw new HttpError(500, 'Invoice appointment is missing customer', 'INVOICE_CUSTOMER_MISSING');
+  }
+
+  const existingEarnTransaction = await tx.loyaltyTransaction.findFirst({
+    where: { invoiceId: invoice.id, type: 'EARN' },
+    select: { id: true, points: true },
+  });
+  if (existingEarnTransaction) {
+    if (invoice.pointsEarned !== existingEarnTransaction.points) {
+      await tx.invoice.update({
+        where: { id: invoice.id },
+        data: { pointsEarned: existingEarnTransaction.points },
+      });
+    }
+    return { awarded: false, reason: 'ALREADY_AWARDED' };
+  }
+
+  const points = calculateEarnedPoints(invoice.totalAmt);
+  if (points <= 0) {
+    return { awarded: false, reason: 'ZERO_POINTS' };
+  }
+
+  const loyaltyAccount = await ensureLoyaltyAccount(tx, invoice.appointment.customerId);
+
+  const accountAfterIncrement = await tx.loyaltyAccount.update({
+    where: { id: loyaltyAccount.id },
+    data: {
+      totalPoints: { increment: points },
+      lifetimePoints: { increment: points },
+    },
+    select: { id: true, totalPoints: true, lifetimePoints: true, tier: true },
+  });
+
+  const nextTier = resolveTierByLifetimePoints(accountAfterIncrement.lifetimePoints);
+  const accountAfterTier =
+    nextTier === accountAfterIncrement.tier
+      ? accountAfterIncrement
+      : await tx.loyaltyAccount.update({
+          where: { id: loyaltyAccount.id },
+          data: { tier: nextTier },
+          select: { id: true, totalPoints: true, lifetimePoints: true, tier: true },
+        });
+
+  await tx.loyaltyTransaction.create({
+    data: {
+      loyaltyAccountId: loyaltyAccount.id,
+      invoiceId: invoice.id,
+      type: 'EARN',
+      points,
+      balanceAfter: accountAfterTier.totalPoints,
+      description: `Points earned from invoice ${invoice.id}`,
+    },
+  });
+
+  await tx.invoice.update({
+    where: { id: invoice.id },
+    data: { pointsEarned: points },
+  });
+
+  return {
+    awarded: true,
+    points,
+    balanceAfter: accountAfterTier.totalPoints,
+    tier: accountAfterTier.tier,
+  };
+}
 import { prisma } from '../config/db.js';
 
 export const getLoyaltyAccount = async (customerId) => {
