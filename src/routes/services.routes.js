@@ -156,6 +156,71 @@ router.get('/:id', optionalAuth, servicesController.getServiceById);
 
 /**
  * @swagger
+ * /services/{id}/staff:
+ *   get:
+ *     tags: [Services]
+ *     summary: Get available staff for a service
+ *     description: |
+ *       Returns all staff members who are specialized in the given service and currently available.
+ *       Includes each staff member's weekly schedule. Use this to power the
+ *       "select service first, then pick a staff" booking flow.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Service ID
+ *     responses:
+ *       200:
+ *         description: List of available staff for this service
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 serviceId:
+ *                   type: string
+ *                 serviceName:
+ *                   type: string
+ *                 staff:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       firstName:
+ *                         type: string
+ *                       lastName:
+ *                         type: string
+ *                       bio:
+ *                         type: string
+ *                         nullable: true
+ *                       isAvailable:
+ *                         type: boolean
+ *                       schedules:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             dayOfWeek:
+ *                               type: integer
+ *                               description: "0=Sunday, 1=Monday, ..., 6=Saturday"
+ *                             startTime:
+ *                               type: string
+ *                               format: time
+ *                             endTime:
+ *                               type: string
+ *                               format: time
+ *       404:
+ *         description: Service not found
+ */
+router.get('/:id/staff', optionalAuth, servicesController.getStaffByService);
+
+
+/**
+ * @swagger
  * /services/{id}:
  *   patch:
  *     tags: [Services]

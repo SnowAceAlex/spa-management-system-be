@@ -248,3 +248,49 @@ export async function deleteService(req, res, next) {
     next(err);
   }
 }
+
+export async function getStaffByService(req, res, next) {
+  try {
+    const { id: serviceId } = req.params;
+
+    const service = await prisma.service.findFirst({
+      where: { id: serviceId, isActive: true },
+      select: { id: true, name: true },
+    });
+    if (!service) {
+      throw new HttpError(404, 'Service not found', 'SERVICE_NOT_FOUND');
+    }
+
+    const specializations = await prisma.staffSpecialization.findMany({
+      where: { serviceId },
+      include: {
+        staff: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            bio: true,
+            isAvailable: true,
+            schedules: {
+              where: { isWorkingDay: true },
+              select: {
+                dayOfWeek: true,
+                startTime: true,
+                endTime: true,
+              },
+              orderBy: { dayOfWeek: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    const staff = specializations
+      .map((spec) => spec.staff)
+      .filter((s) => s.isAvailable);
+
+    res.json({ serviceId, serviceName: service.name, staff });
+  } catch (err) {
+    next(err);
+  }
+}
