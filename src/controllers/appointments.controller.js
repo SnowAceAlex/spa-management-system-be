@@ -219,10 +219,6 @@ export async function createAppointment(req, res, next) {
 
 export async function listAppointments(req, res, next) {
   try {
-    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit, 10) || 10));
-    const skip = (page - 1) * limit;
-
     const where = {};
     const actor = await resolveActorProfile(prisma, req.user);
     if (req.user.role === 'CUSTOMER') {
@@ -249,27 +245,48 @@ export async function listAppointments(req, res, next) {
       where.scheduledAt = { gte: dayWindow.start, lte: dayWindow.end };
     }
 
-    const [appointments, total] = await Promise.all([
-      prisma.appointment.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { scheduledAt: 'asc' },
-        include: {
-          services: {
-            include: {
-              service: { select: { id: true, name: true, price: true } },
-            },
+    const appointments = await prisma.appointment.findMany({
+      where,
+      orderBy: { scheduledAt: 'asc' },
+      include: {
+        services: {
+          include: {
+            service: { select: { id: true, name: true, price: true } },
           },
         },
-      }),
-      prisma.appointment.count({ where }),
-    ]);
+      },
+    });
 
     res.json({
       appointments: appointments.map(normalizeAppointmentRow),
-      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function countAppointmentsByStaff(req, res, next) {
+  try {
+    const { staffId } = req.params;
+
+    const staff = await prisma.staff.findUnique({
+      where: { id: staffId },
+      select: { id: true },
+    });
+    if (!staff) {
+      throw new HttpError(404, 'Staff not found', 'STAFF_NOT_FOUND');
+    }
+
+    if (req.user.role === 'STAFF') {
+      const actor = await resolveActorProfile(prisma, req.user);
+      if (actor.staffId !== staffId) {
+        throw new HttpError(403, 'Forbidden', 'AUTH_FORBIDDEN');
+      }
+    }
+
+    const total = await prisma.appointment.count({ where: { staffId } });
+
+    res.json({ staffId, total });
   } catch (err) {
     next(err);
   }

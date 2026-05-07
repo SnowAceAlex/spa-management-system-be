@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   cancelAppointment,
+  countAppointmentsByStaff,
   createAppointment,
   getAppointmentById,
   listAppointments,
@@ -96,18 +97,6 @@ router.post(
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *         description: Page number (1-indexed)
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Items per page (max 100)
- *       - in: query
  *         name: status
  *         schema:
  *           type: string
@@ -168,6 +157,50 @@ router.get('/', auth, requireRole(['ADMIN', 'STAFF', 'CUSTOMER']), listAppointme
  *       404:
  *         description: Appointment not found
  */
+/**
+ * @swagger
+ * /appointments/staff/{staffId}/count:
+ *   get:
+ *     tags: [Appointments]
+ *     summary: Count total appointments for a staff
+ *     description: |
+ *       Returns the total number of appointments assigned to the given staff (no filters).
+ *       Admins can query any staff; staff users can only query their own ID.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: staffId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Staff profile ID
+ *     responses:
+ *       200:
+ *         description: Total appointment count
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 staffId:
+ *                   type: string
+ *                 total:
+ *                   type: integer
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Staff not found
+ */
+router.get(
+  '/staff/:staffId/count',
+  auth,
+  requireRole(['ADMIN', 'STAFF']),
+  countAppointmentsByStaff,
+);
+
 router.get('/:id', auth, requireRole(['ADMIN', 'STAFF', 'CUSTOMER']), getAppointmentById);
 
 /**
