@@ -10,13 +10,13 @@ import authRoutes from './routes/auth.routes.js';
 import usersRoutes from './routes/users.routes.js';
 import serviceCategoriesRoutes from './routes/service-categories.routes.js';
 import servicesRoutes from './routes/services.routes.js';
+import staffRoutes from './routes/staff.routes.js';
 import staffSpecializationsRoutes from './routes/staff-specializations.routes.js';
 import staffSchedulesRoutes from './routes/staff-schedules.routes.js';
 import appointmentsRoutes from './routes/appointments.routes.js';
 import invoicesRoutes from './routes/invoices.routes.js';
 import loyaltyRoutes from './routes/loyalty.routes.js';
 import webhooksRoutes from './routes/webhooks.routes.js';
-
 
 export function createApp() {
   const app = express();
@@ -45,6 +45,7 @@ export function createApp() {
   app.use('/users', usersRoutes);
   app.use('/service-categories', serviceCategoriesRoutes);
   app.use('/services', servicesRoutes);
+  app.use('/staff', staffRoutes);
   app.use('/staff', staffSpecializationsRoutes);
   app.use('/staff', staffSchedulesRoutes);
   app.use('/appointments', appointmentsRoutes);
