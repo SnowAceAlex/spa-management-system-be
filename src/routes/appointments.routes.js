@@ -197,7 +197,7 @@ router.get('/', auth, requireRole(['ADMIN', 'STAFF', 'CUSTOMER']), listAppointme
 router.get(
   '/staff/:staffId/count',
   auth,
-  requireRole(['ADMIN', 'STAFF']),
+  requireRole(['ADMIN', 'STAFF', 'CUSTOMER']),
   countAppointmentsByStaff,
 );
 
