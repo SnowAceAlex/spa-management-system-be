@@ -17,50 +17,31 @@ function formatService(service) {
 export async function listServices(req, res, next) {
   try {
     const includeInactive = adminSeesInactive(req);
-    const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 10));
-    const skip = (page - 1) * limit;
 
     const where = {
       ...(includeInactive ? {} : { isActive: true }),
       ...(req.query.categoryId ? { categoryId: req.query.categoryId } : {}),
-      ...(req.query.q
-        ? { name: { contains: req.query.q, mode: 'insensitive' } }
-        : {}),
+      ...(req.query.q ? { name: { contains: req.query.q, mode: 'insensitive' } } : {}),
     };
 
-    const [services, total] = await Promise.all([
-      prisma.service.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          categoryId: true,
-          name: true,
-          description: true,
-          durationMin: true,
-          price: true,
-          imageUrl: true,
-          isActive: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      }),
-      prisma.service.count({ where }),
-    ]);
-
-    const pages = Math.ceil(total / limit);
-    res.json({
-      services: services.map(formatService),
-      pagination: {
-        page,
-        limit,
-        total,
-        pages,
+    const services = await prisma.service.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        categoryId: true,
+        name: true,
+        description: true,
+        durationMin: true,
+        price: true,
+        imageUrl: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
+
+    res.json({ services: services.map(formatService) });
   } catch (err) {
     next(err);
   }

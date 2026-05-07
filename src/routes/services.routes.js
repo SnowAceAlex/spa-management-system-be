@@ -24,21 +24,10 @@ const router = Router();
  *     tags: [Services]
  *     summary: List services
  *     description: |
- *       Public list of active services. Admins may send Bearer token and query includeInactive=true to list all.
- *       Supports filtering by categoryId, searching by name (q), and pagination.
+ *       Public list of active services returned as a single array (no pagination).
+ *       Admins may send Bearer token and query includeInactive=true to list all.
+ *       Supports filtering by categoryId and searching by name (q).
  *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *         description: Page number (1-indexed)
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Items per page (max 100)
  *       - in: query
  *         name: categoryId
  *         schema:
